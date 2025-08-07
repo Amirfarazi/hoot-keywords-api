@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جزئیات فروشنده</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">جزئیات فروشنده</div>
+    <nav>
+      <a href="/admin" class="btn">بازگشت</a>
+      <a href="/logout" class="btn">خروج</a>
+    </nav>
+  </header>
+
+  <main class="container card">
+    <h2><%= seller.fullname %> <span class="muted">(@<%= seller.username %>)</span></h2>
+    <% if (logs.length === 0) { %>
+      <div class="muted">گزارشی ثبت نشده است.</div>
+    <% } else { %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>تاریخ</th>
+            <th>ساعات کاری</th>
+            <th>فعالیت</th>
+            <th>میزان فروش</th>
+            <th>نوع محصول</th>
+            <th>یادداشت</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% logs.forEach(l => { %>
+          <tr>
+            <td><%= l.date %></td>
+            <td><%= l.workingHours %></td>
+            <td><%= l.activityLevel %></td>
+            <td><%= l.salesAmount %></td>
+            <td><%= l.productType %></td>
+            <td><%= l.notes %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</body>
+</html>

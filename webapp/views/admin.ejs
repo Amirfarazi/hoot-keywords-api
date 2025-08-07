@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>داشبورد مدیریت</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">داشبورد مدیریت</div>
+    <nav>
+      <a href="/logout" class="btn">خروج</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="grid-2">
+      <div class="card">
+        <h2>ایجاد محصول جدید</h2>
+        <form method="post" action="/admin/products" enctype="multipart/form-data">
+          <div class="field">
+            <label>عنوان</label>
+            <input type="text" name="title" required />
+          </div>
+          <div class="field">
+            <label>توضیحات</label>
+            <textarea name="description" rows="4" placeholder="توضیحات کامل"></textarea>
+          </div>
+          <div class="field">
+            <label>قیمت (تومان)</label>
+            <input type="number" name="price" required />
+          </div>
+          <div class="field">
+            <label>تصاویر (حداکثر 5)</label>
+            <input type="file" name="images" multiple accept="image/*" />
+          </div>
+          <button type="submit" class="btn-primary">ثبت محصول</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>لیست محصولات</h2>
+        <div class="product-list">
+          <% if (products.length === 0) { %>
+            <div class="muted">محصولی ثبت نشده است.</div>
+          <% } %>
+          <% products.forEach(p => { %>
+            <div class="product-item">
+              <div class="product-images">
+                <% p.images.forEach(img => { %>
+                  <img src="<%= img %>" alt="img" />
+                <% }) %>
+              </div>
+              <div class="product-info">
+                <div class="title"><%= p.title %></div>
+                <div class="desc"><%= p.description %></div>
+                <div class="price"><%= p.price.toLocaleString('fa-IR') %> تومان</div>
+                <div class="time">ثبت: <%= new Date(p.createdAt).toLocaleString('fa-IR') %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>گزارش‌های فروشندگان</h2>
+      <% if (logsBySellerId.length === 0) { %>
+        <div class="muted">فروشنده‌ای ثبت نشده است.</div>
+      <% } %>
+      <% logsBySellerId.forEach(group => { %>
+        <div class="seller-logs">
+          <div class="seller-header">
+            <div>
+              <strong><%= group.seller.fullname %></strong>
+              <span class="muted">(@<%= group.seller.username %>)</span>
+            </div>
+            <a class="btn" href="/admin/sellers/<%= group.seller.id %>">جزئیات</a>
+          </div>
+          <% if (group.logs.length === 0) { %>
+            <div class="muted">گزارشی ثبت نشده است.</div>
+          <% } else { %>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>تاریخ</th>
+                  <th>ساعات کاری</th>
+                  <th>فعالیت</th>
+                  <th>میزان فروش</th>
+                  <th>نوع محصول</th>
+                  <th>یادداشت</th>
+                </tr>
+              </thead>
+              <tbody>
+              <% group.logs.forEach(l => { %>
+                <tr>
+                  <td><%= l.date %></td>
+                  <td><%= l.workingHours %></td>
+                  <td><%= l.activityLevel %></td>
+                  <td><%= l.salesAmount %></td>
+                  <td><%= l.productType %></td>
+                  <td><%= l.notes %></td>
+                </tr>
+              <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        </div>
+      <% }) %>
+    </section>
+  </main>
+</body>
+</html>

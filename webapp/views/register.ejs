@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ثبت‌نام | فروشنده</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+  <div class="auth-container">
+    <h1>ثبت‌نام فروشنده</h1>
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+    <form method="post" action="/register" class="card">
+      <div class="field">
+        <label>نام و نام خانوادگی</label>
+        <input type="text" name="fullname" required />
+      </div>
+      <div class="field">
+        <label>نام کاربری</label>
+        <input type="text" name="username" required />
+      </div>
+      <div class="field">
+        <label>گذرواژه</label>
+        <input type="password" name="password" required />
+      </div>
+      <button type="submit" class="btn-primary">ثبت‌نام</button>
+      <div class="muted">حساب دارید؟ <a href="/login">ورود</a></div>
+    </form>
+  </div>
+</body>
+</html>
