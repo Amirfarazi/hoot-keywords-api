@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پنل فروشنده</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">پنل فروشنده</div>
+    <nav>
+      <a href="/logout" class="btn">خروج</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>محصولات مدیریت (برای بازاریابی)</h2>
+      <div class="product-list">
+        <% if (products.length === 0) { %>
+          <div class="muted">محصولی وجود ندارد.</div>
+        <% } %>
+        <% products.forEach(p => { %>
+          <div class="product-item">
+            <div class="product-images">
+              <% p.images.forEach(img => { %>
+                <img src="<%= img %>" alt="img" />
+              <% }) %>
+            </div>
+            <div class="product-info">
+              <div class="title"><%= p.title %></div>
+              <div class="desc"><%= p.description %></div>
+              <div class="price"><%= p.price.toLocaleString('fa-IR') %> تومان</div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h2>ثبت گزارش روزانه</h2>
+        <% if (error) { %>
+          <div class="alert"><%= error %></div>
+        <% } %>
+        <form method="post" action="/seller/logs">
+          <div class="field">
+            <label>تاریخ</label>
+            <input type="date" name="date" required />
+          </div>
+          <div class="field">
+            <label>ساعات کاری</label>
+            <input type="number" name="workingHours" step="0.5" required />
+          </div>
+          <div class="field">
+            <label>میزان فعالیت</label>
+            <input type="text" name="activityLevel" placeholder="مثلاً: بالا/متوسط/کم" />
+          </div>
+          <div class="field">
+            <label>میزان فروش (تعداد/مبلغ)</label>
+            <input type="number" name="salesAmount" required />
+          </div>
+          <div class="field">
+            <label>نوع محصول فروخته شده</label>
+            <input type="text" name="productType" required />
+          </div>
+          <div class="field">
+            <label>یادداشت</label>
+            <textarea name="notes" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">ثبت گزارش</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>گزارش‌های من</h2>
+        <% if (myLogs.length === 0) { %>
+          <div class="muted">گزارشی ثبت نشده است.</div>
+        <% } else { %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>تاریخ</th>
+                <th>ساعات کاری</th>
+                <th>فعالیت</th>
+                <th>میزان فروش</th>
+                <th>نوع محصول</th>
+                <th>یادداشت</th>
+              </tr>
+            </thead>
+            <tbody>
+            <% myLogs.forEach(l => { %>
+              <tr>
+                <td><%= l.date %></td>
+                <td><%= l.workingHours %></td>
+                <td><%= l.activityLevel %></td>
+                <td><%= l.salesAmount %></td>
+                <td><%= l.productType %></td>
+                <td><%= l.notes %></td>
+              </tr>
+            <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
