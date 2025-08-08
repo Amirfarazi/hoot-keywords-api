@@ -294,6 +294,19 @@ app.get('/admin/sellers/:id', requireAuth, requireRole('admin'), (req, res) => {
   res.render('admin_seller_detail', { user: req.session.user, seller, logs });
 });
 
+// Direct download routes
+app.get('/download/webapp-full.zip', (req, res) => {
+  const zipPath = path.join(__dirname, '..', 'webapp-full.zip');
+  if (!fs.existsSync(zipPath)) return res.status(404).send('فایل یافت نشد');
+  res.download(zipPath, 'webapp-full.zip');
+});
+
+app.get('/download/webapp.zip', (req, res) => {
+  const zipPath = path.join(__dirname, '..', 'webapp.zip');
+  if (!fs.existsSync(zipPath)) return res.status(404).send('فایل یافت نشد');
+  res.download(zipPath, 'webapp.zip');
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).send('Route not found.');
