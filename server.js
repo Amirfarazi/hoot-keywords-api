@@ -5,6 +5,7 @@ import { URL } from 'url';
 import { performance } from 'perf_hooks';
 import net from 'net';
 import tls from 'tls';
+import crypto from 'crypto';
 
 const PUBLIC_DIR = join(process.cwd(), 'public');
 
@@ -83,28 +84,71 @@ function parseVmessUri(uri) {
   } catch {
     return null;
   }
-  // Common fields: add (host), port, ps (name), tls/security
   const host = json.add || json.host;
   const port = Number(json.port || 443);
   const name = json.ps || `${host}:${port}`;
-  const isTls = String(json.tls || json.security || '').toLowerCase() === 'tls';
-  return host && port ? { scheme: 'vmess', host, port, name, isTls, raw: uri } : null;
+  const security = String(json.tls || json.security || '').toLowerCase();
+  const isTls = security === 'tls' || security === 'reality';
+  const network = String(json.net || json.network || '').toLowerCase() || 'tcp';
+  const wsPath = json.path || json.wsPath || (json.wsSettings && json.wsSettings.path) || '';
+  const wsHost = json.host || (json.wsSettings && json.wsSettings.headers && (json.wsSettings.headers.Host || json.wsSettings.headers.host));
+  const sni = json.sni || json.serverName || (json.tlsSettings && json.tlsSettings.serverName) || undefined;
+  const alpn = json.alpn || (json.tlsSettings && json.tlsSettings.alpn) || undefined;
+  return host && port ? { scheme: 'vmess', host, port, name, isTls, security, network, wsPath, wsHost, sni, alpn, raw: uri } : null;
+}
+
+function parseShadowsocks(uri) {
+  // ss://[method:password@]host:port#name  OR ss://base64(method:password@host:port)#name
+  try {
+    const withoutScheme = uri.replace(/^ss:\/\//i, '');
+    let credsAndHost = withoutScheme;
+    let name = '';
+    const hashIdx = withoutScheme.indexOf('#');
+    if (hashIdx >= 0) {
+      name = decodeURIComponent(withoutScheme.slice(hashIdx + 1));
+      credsAndHost = withoutScheme.slice(0, hashIdx);
+    }
+    let decoded = credsAndHost;
+    if (!decoded.includes('@') && !decoded.includes(':')) {
+      try {
+        decoded = Buffer.from(decoded, 'base64').toString('utf-8');
+      } catch {}
+    }
+    const atIdx = decoded.lastIndexOf('@');
+    const hostPortStr = atIdx >= 0 ? decoded.slice(atIdx + 1) : decoded;
+    const hp = hostPortStr.split(':');
+    if (hp.length < 2) return null;
+    const host = hp[0];
+    const port = Number(hp[1]);
+    return host && port ? { scheme: 'ss', host, port, name: name || `${host}:${port}`, isTls: false, network: 'tcp', raw: uri } : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseUrlLikeUri(uri) {
-  // vless://, trojan://, ss:// (simple heuristics)
-  if (/^vless:\/\//i.test(uri) || /^trojan:\/\//i.test(uri) || /^ss:\/\//i.test(uri)) {
+  // vless://, trojan:// with transport params, ss:// handled separately
+  if (/^vless:\/\//i.test(uri) || /^trojan:\/\//i.test(uri)) {
     try {
       const u = new URL(uri);
       const host = u.hostname;
-      let port = Number(u.port || (u.protocol === 'ss:' ? 443 : 443));
+      const port = Number(u.port || 443);
       const name = decodeURIComponent(u.hash?.replace('#', '') || `${host}:${port}`);
-      const isTls = (u.searchParams.get('security') || '').toLowerCase() === 'tls' || port === 443;
+      const security = (u.searchParams.get('security') || '').toLowerCase();
+      const isTls = security === 'tls' || security === 'reality' || port === 443;
+      const type = (u.searchParams.get('type') || '').toLowerCase();
+      const wsPath = u.searchParams.get('path') || '';
+      const wsHost = u.searchParams.get('host') || u.searchParams.get('Host') || '';
+      const sni = u.searchParams.get('sni') || u.searchParams.get('serverName') || '';
+      const alpn = u.searchParams.get('alpn') || '';
       const scheme = u.protocol.replace(':', '');
-      return host ? { scheme, host, port, name, isTls, raw: uri } : null;
+      return host ? { scheme, host, port, name, isTls, security, network: type || 'tcp', wsPath, wsHost, sni, alpn, raw: uri } : null;
     } catch {
       return null;
     }
+  }
+  if (/^ss:\/\//i.test(uri)) {
+    return parseShadowsocks(uri);
   }
   return null;
 }
@@ -178,6 +222,77 @@ async function timedTcpOrTlsProbe({ host, port, servername, useTls, timeoutMs })
   });
 }
 
+async function timedWebSocketHandshakeProbe({ host, port, useTls, path = '/', hostHeader, servername, timeoutMs }) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const onDone = (ok, err) => resolve({ ok, ms: Math.round(performance.now() - start), error: err && String(err.message || err) });
+
+    const key = crypto.randomBytes(16).toString('base64');
+    const httpReq = `GET ${path || '/'} HTTP/1.1\r\n`
+      + `Host: ${hostHeader || servername || host}\r\n`
+      + `Upgrade: websocket\r\n`
+      + `Connection: Upgrade\r\n`
+      + `Sec-WebSocket-Key: ${key}\r\n`
+      + `Sec-WebSocket-Version: 13\r\n`
+      + `User-Agent: Mozilla/5.0\r\n\r\n`;
+
+    let socket;
+    const onData = (chunk) => {
+      const text = chunk.toString('utf-8');
+      if (text.startsWith('HTTP/1.1 101') || text.startsWith('HTTP/1.0 101')) {
+        cleanup();
+        onDone(true);
+      } else if (text.startsWith('HTTP/')) {
+        cleanup();
+        onDone(false, new Error(text.split('\r\n')[0]));
+      }
+    };
+    const onError = (err) => { cleanup(); onDone(false, err); };
+    const onTimeout = () => { cleanup(); onDone(false, new Error('timeout')); };
+    const cleanup = () => {
+      try { socket.off('data', onData); } catch {}
+      try { socket.off('error', onError); } catch {}
+      try { socket.setTimeout(0); } catch {}
+      try { socket.end(); } catch {}
+      try { socket.destroy(); } catch {}
+    };
+
+    try {
+      if (useTls) {
+        socket = tls.connect({ host, port, servername: servername || host, rejectUnauthorized: false }, () => {
+          socket.write(httpReq);
+        });
+      } else {
+        socket = net.connect({ host, port }, () => {
+          socket.write(httpReq);
+        });
+      }
+      socket.on('data', onData);
+      socket.on('error', onError);
+      socket.setTimeout(timeoutMs, onTimeout);
+    } catch (err) {
+      onDone(false, err);
+    }
+  });
+}
+
+async function probeSingleConfig(cfg, opts) {
+  const { timeoutMs } = opts || {};
+  const network = (cfg.network || '').toLowerCase();
+  if (network === 'ws' || network === 'websocket') {
+    return await timedWebSocketHandshakeProbe({
+      host: cfg.host,
+      port: cfg.port,
+      useTls: !!cfg.isTls,
+      path: cfg.wsPath || '/',
+      hostHeader: cfg.wsHost || cfg.sni || cfg.host,
+      servername: cfg.sni || cfg.wsHost || cfg.host,
+      timeoutMs
+    });
+  }
+  return await timedTcpOrTlsProbe({ host: cfg.host, port: cfg.port, servername: cfg.sni || cfg.host, useTls: !!cfg.isTls, timeoutMs });
+}
+
 async function probeConfigs(configs, opts) {
   const { timeoutMs = 3000, concurrency = 25 } = opts || {};
   const results = [];
@@ -193,7 +308,7 @@ async function probeConfigs(configs, opts) {
       while (active < concurrency && index < configs.length) {
         const cfg = configs[index++];
         active++;
-        timedTcpOrTlsProbe({ host: cfg.host, port: cfg.port, servername: cfg.sni || cfg.host, useTls: !!cfg.isTls, timeoutMs })
+        probeSingleConfig(cfg, { timeoutMs })
           .then((res) => {
             results.push({ ...cfg, ok: res.ok, ms: res.ms, error: res.error });
           })
