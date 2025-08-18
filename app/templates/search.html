@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="/search" method="get" class="search-form">
+    <input type="text" name="q" value="{{ query }}" placeholder="چی می‌خوای دانلود کنی؟ مثلا: کتاب الگوریتم pdf" required />
+    <button type="submit">جستجو</button>
+    <div class="hint">مثال‌ها: «آموزش پایتون pdf»، «linux kernel source zip»</div>
+    {% if message %}
+    <div class="message">{{ message }}</div>
+    {% endif %}
+</form>
+
+{% if results and results|length > 0 %}
+<div class="results">
+    {% for item in results %}
+    <div class="result">
+        <div class="title">{{ item.title or 'لینک فایل' }}</div>
+        <div class="meta">
+            <span class="source">صفحه منبع: <a href="{{ item.source_page }}" target="_blank" rel="noopener">باز کردن</a></span>
+            {% if item.content_type %}<span class="type">نوع: {{ item.content_type }}</span>{% endif %}
+        </div>
+        <div class="actions">
+            <a class="download" href="{{ item.download_href }}">دانلود مستقیم</a>
+            <a class="open" href="{{ item.direct_url }}" target="_blank" rel="noopener">باز کردن لینک فایل</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">اینجا نتایج نمایش داده می‌شود.</div>
+{% endif %}
+</div>
+{% endblock %}
+
