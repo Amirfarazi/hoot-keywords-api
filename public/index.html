@@ -1,156 +1,95 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>اسکنر کانفیگ V2Ray - سریع و زیبا</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root { color-scheme: dark; }
-    html, body { height: 100%; }
-    body { font-family: 'Vazirmatn', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
-    .glass {
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>تحلیلگر پیشرفته ارز</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100">
-  <div class="absolute inset-0 -z-10 overflow-hidden">
-    <div class="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-fuchsia-600/20 blur-3xl"></div>
-    <div class="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl"></div>
-  </div>
+<body>
+    <div class="container">
+        <h1 class="header">🚀 تحلیلگر پیشرفته ارز و بازار مالی</h1>
 
-  <header class="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-fuchsia-400">
-        <path d="M3 12h6l3 7 3-14 3 7h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <h1 class="text-xl font-extrabold tracking-tight">اسکنر وی‌تو‌ری سریع</h1>
+        <div class="api-section">
+            <h3>🔑 تنظیمات API</h3>
+            <input type="password" id="openai-api-key" class="api-input" placeholder="کلید API ChatGPT را وارد کنید">
+            <button class="btn" id="save-key-btn">💾 ذخیره کلید</button>
+            <button class="btn" id="test-conn-btn">🔗 تست اتصال</button>
+        </div>
+
+        <div class="tabs" role="tablist">
+            <div class="tab active" data-tab="analysis">📊 تحلیل لحظه‌ای</div>
+            <div class="tab" data-tab="history">📈 تاریخچه قیمت‌ها</div>
+            <div class="tab" data-tab="patterns">🎯 الگوهای معاملاتی</div>
+            <div class="tab" data-tab="recommendations">💡 پیشنهادات</div>
+        </div>
+
+        <div id="analysis-tab" class="tab-content active">
+            <div class="actions-row">
+                <button class="btn" id="start-analysis-btn">🔍 شروع تحلیل</button>
+                <button class="btn" id="refresh-data-btn">🔄 بروزرسانی</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>در حال تحلیل بازار...</p>
+            </div>
+
+            <div class="analysis-grid" id="analysis-results"></div>
+
+            <div class="deep-box">
+                <div class="deep-box-header">
+                    <h3>🧠 تحلیل عمیق (بازه ۱۰ دقیقه آینده)</h3>
+                    <button class="btn secondary" id="run-deep-analysis-btn">🚦 اجرای تحلیل عمیق</button>
+                </div>
+                <div id="deep-analysis-output" class="deep-output">برای اجرای تحلیل عمیق، ابتدا داده‌ها را دریافت کنید و سپس دکمه بالا را فشار دهید.</div>
+            </div>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <div class="date-selector">
+                <label>📅 انتخاب تاریخ:</label>
+                <input type="date" id="history-date" class="api-input">
+                <label>⏰ انتخاب ساعت:</label>
+                <input type="time" id="history-time" class="api-input">
+                <button class="btn" id="show-history-btn">📊 نمایش قیمت‌ها</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="price-chart"></canvas>
+            </div>
+
+            <div id="historical-analysis"></div>
+        </div>
+
+        <div id="patterns-tab" class="tab-content">
+            <div class="actions-row">
+                <button class="btn" id="analyze-patterns-btn">🔍 تحلیل الگوها</button>
+                <button class="btn" id="generate-formula-btn">📐 ایجاد فرمول</button>
+            </div>
+
+            <div class="pattern-card" id="pattern-results">
+                <h3>🎯 الگوهای معاملاتی شناسایی شده</h3>
+                <p>برای تحلیل الگوها، ابتدا دکمه "تحلیل الگوها" را فشار دهید.</p>
+            </div>
+        </div>
+
+        <div id="recommendations-tab" class="tab-content">
+            <button class="btn" id="generate-recs-btn">💡 تولید پیشنهادات</button>
+
+            <div class="recommendation-box" id="buy-recommendations">
+                <h3>🟢 پیشنهادات خرید</h3>
+                <p>در انتظار تحلیل...</p>
+            </div>
+
+            <div class="recommendation-box" id="sell-recommendations">
+                <h3>🔴 پیشنهادات فروش</h3>
+                <p>در انتظار تحلیل...</p>
+            </div>
+        </div>
     </div>
-  </header>
 
-  <main class="max-w-6xl mx-auto px-4 pb-24">
-    <section class="glass rounded-2xl p-6 md:p-8 shadow-2xl">
-      <h2 class="text-2xl md:text-3xl font-bold mb-2">ساخت و تست سریع کانفیگ‌های V2Ray</h2>
-      <p class="text-slate-300 mb-6">لینک‌های سابسکریپشن یا کانفیگ‌های خام را وارد کنید. اسکنر با اتصال TCP/TLS کم‌تاخیرترین سرورها را پیدا می‌کند و امکان کپی فوری را فراهم می‌سازد.</p>
-
-      <div class="grid md:grid-cols-2 gap-6">
-        <div>
-          <label class="block text-sm mb-2">لینک‌های سابسکریپشن یا آدرس‌ها (هر خط یکی)</label>
-          <textarea id="input-sources" class="w-full h-40 glass rounded-xl p-4 outline-none focus:ring-2 focus:ring-fuchsia-500" placeholder="مثال:\nhttps://example.com/sub.txt\nvmess://...\nss://...\nvless://...\n..." spellcheck="false"></textarea>
-          <div class="mt-3 grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm mb-2">Timeout (ms)</label>
-              <input id="input-timeout" type="number" class="w-full glass rounded-xl p-3 outline-none focus:ring-2 focus:ring-cyan-500" value="3000" />
-            </div>
-            <div>
-              <label class="block text-sm mb-2">Concurrency</label>
-              <input id="input-concurrency" type="number" class="w-full glass rounded-xl p-3 outline-none focus:ring-2 focus:ring-cyan-500" value="25" />
-            </div>
-          </div>
-          <button id="btn-scan" class="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 transition text-white font-semibold px-6 py-3 rounded-xl shadow-lg">
-            شروع اسکن
-          </button>
-        </div>
-
-        <div>
-          <label class="block text-sm mb-2">نتایج کم‌پینگ (مرتب‌شده)</label>
-          <div id="results" class="glass rounded-xl p-4 h-56 overflow-auto space-y-3"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mt-8 glass rounded-2xl p-6 md:p-8">
-      <h3 class="text-xl font-bold mb-3">خروجی قابل کپی</h3>
-      <div class="flex items-center gap-3 mb-3">
-        <button id="btn-copy-all" class="bg-slate-800 hover:bg-slate-700 transition px-4 py-2 rounded-lg">کپی همه</button>
-        <span id="copy-status" class="text-sm text-slate-400"></span>
-      </div>
-      <textarea id="output-all" class="w-full h-48 glass rounded-xl p-4 outline-none" readonly></textarea>
-    </section>
-  </main>
-
-  <footer class="max-w-6xl mx-auto px-4 pb-10 text-center text-slate-500">
-    ساخته‌شده برای تست سریع و ارائه کم‌تاخیرترین کانفیگ‌ها
-  </footer>
-
-  <script>
-    const elSources = document.getElementById('input-sources');
-    const elTimeout = document.getElementById('input-timeout');
-    const elConcurrency = document.getElementById('input-concurrency');
-    const elBtnScan = document.getElementById('btn-scan');
-    const elResults = document.getElementById('results');
-    const elOutputAll = document.getElementById('output-all');
-    const elCopyAll = document.getElementById('btn-copy-all');
-    const elCopyStatus = document.getElementById('copy-status');
-
-    function renderResults(items) {
-      elResults.innerHTML = '';
-      for (const item of items) {
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-3 bg-slate-900/60 rounded-lg px-3 py-2';
-        const left = document.createElement('div');
-        left.innerHTML = `
-          <div class="text-sm font-semibold">${item.name || item.host + ':' + item.port}</div>
-          <div class="text-xs text-slate-400">${item.scheme.toUpperCase()} • ${item.host}:${item.port} • ${item.ms}ms</div>
-        `;
-        const btn = document.createElement('button');
-        btn.className = 'text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-md';
-        btn.textContent = 'کپی';
-        btn.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(item.raw);
-            btn.textContent = 'کپی شد';
-            setTimeout(() => (btn.textContent = 'کپی'), 1200);
-          } catch {}
-        });
-        row.appendChild(left);
-        row.appendChild(btn);
-        elResults.appendChild(row);
-      }
-    }
-
-    elCopyAll.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(elOutputAll.value);
-        elCopyStatus.textContent = 'کپی شد';
-        setTimeout(() => (elCopyStatus.textContent = ''), 1500);
-      } catch {}
-    });
-
-    elBtnScan.addEventListener('click', async () => {
-      const sources = elSources.value.split('\n').map(s => s.trim()).filter(Boolean);
-      const timeoutMs = Number(elTimeout.value || 3000);
-      const concurrency = Number(elConcurrency.value || 25);
-
-      elBtnScan.disabled = true;
-      elBtnScan.textContent = 'در حال اسکن...';
-      elResults.innerHTML = '<div class="text-slate-400">در حال تست سرورها...</div>';
-      elOutputAll.value = '';
-
-      try {
-        const res = await fetch('/api/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sources, timeoutMs, concurrency })
-        });
-        const data = await res.json();
-        const items = data.results || [];
-        renderResults(items);
-        elOutputAll.value = items.map(i => i.raw).join('\n');
-        elBtnScan.textContent = 'شروع اسکن';
-      } catch (e) {
-        elResults.innerHTML = '<div class="text-red-400">خطا در اتصال یا پردازش.</div>';
-        elBtnScan.textContent = 'شروع اسکن';
-      } finally {
-        elBtnScan.disabled = false;
-      }
-    });
-  </script>
+    <script src="app.js"></script>
 </body>
 </html>
